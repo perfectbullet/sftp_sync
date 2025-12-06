@@ -47,6 +47,11 @@ preserve_permissions: true     # Preserve file permissions (保持文件权限)
 follow_symlinks: false         # Follow symbolic links (跟随符号链接)
 backup_remote: false           # Backup remote files before overwriting (覆盖前备份远程文件)
 
+# Security settings (安全设置)
+auto_add_host_key: false       # Auto-accept unknown host keys (自动接受未知主机密钥)
+                               # WARNING: Set to true only for testing/development (警告：仅用于测试/开发环境)
+                               # For production, add hosts to ~/.ssh/known_hosts (生产环境请添加主机到 ~/.ssh/known_hosts)
+
 # Behavior settings (行为设置)
 dry_run: false                 # Preview changes without executing (预览更改而不执行)
 verbose: false                 # Enable verbose output (启用详细输出)

@@ -46,7 +46,37 @@ class SFTPSyncer:
         logger.info(f"Connecting to {self.config.username}@{self.config.host}:{self.config.port}")
         
         self.ssh_client = paramiko.SSHClient()
-        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        # Load system host keys
+        try:
+            self.ssh_client.load_system_host_keys()
+        except Exception as e:
+            logger.debug(f"Could not load system host keys: {e}")
+        
+        # Try to load user's known_hosts file
+        try:
+            known_hosts_path = os.path.expanduser("~/.ssh/known_hosts")
+            if os.path.exists(known_hosts_path):
+                self.ssh_client.load_host_keys(known_hosts_path)
+        except Exception as e:
+            logger.debug(f"Could not load user host keys: {e}")
+        
+        # Set host key policy based on configuration
+        if self.config.auto_add_host_key:
+            # Less secure but convenient for testing/development
+            self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            logger.warning(
+                "auto_add_host_key is enabled. This automatically accepts unknown host keys. "
+                "For production use, add trusted hosts to ~/.ssh/known_hosts and disable this option."
+            )
+        else:
+            # More secure: only warn about unknown hosts
+            self.ssh_client.set_missing_host_key_policy(paramiko.WarningPolicy())
+            logger.info(
+                "Using WarningPolicy for host key verification. "
+                "Connection will fail if host is not in known_hosts. "
+                "Add trusted hosts to ~/.ssh/known_hosts or set auto_add_host_key=true in config."
+            )
         
         try:
             connect_kwargs = {
@@ -56,13 +86,18 @@ class SFTPSyncer:
             }
             
             if self.config.private_key:
-                # Use SSH key authentication
+                # Use SSH key authentication (supports RSA, DSA, ECDSA, Ed25519)
                 logger.info(f"Using SSH key: {self.config.private_key}")
-                pkey = paramiko.RSAKey.from_private_key_file(
-                    self.config.private_key,
-                    password=self.config.private_key_password
-                )
-                connect_kwargs["pkey"] = pkey
+                try:
+                    # Try to load the key automatically (detects key type)
+                    pkey = paramiko.load_private_key_file(
+                        self.config.private_key,
+                        password=self.config.private_key_password
+                    )
+                    connect_kwargs["pkey"] = pkey
+                except Exception as e:
+                    logger.error(f"Failed to load private key: {e}")
+                    raise
             else:
                 # Use password authentication
                 connect_kwargs["password"] = self.config.password
@@ -139,8 +174,26 @@ class SFTPSyncer:
         """
         files = []
         local_path = Path(self.config.local_dir)
+        visited_inodes = set()  # Track visited inodes to detect circular symlinks
         
         for root, dirs, filenames in os.walk(local_path, followlinks=self.config.follow_symlinks):
+            # Detect circular symlinks if following symlinks
+            if self.config.follow_symlinks:
+                try:
+                    root_stat = os.stat(root)
+                    inode = (root_stat.st_dev, root_stat.st_ino)
+                    
+                    if inode in visited_inodes:
+                        logger.warning(f"Circular symlink detected, skipping: {root}")
+                        dirs[:] = []  # Don't recurse into this directory
+                        continue
+                    
+                    visited_inodes.add(inode)
+                except OSError as e:
+                    logger.warning(f"Cannot stat directory {root}: {e}")
+                    dirs[:] = []
+                    continue
+            
             # Filter out excluded directories to avoid walking them
             dirs[:] = [d for d in dirs if self.file_filter.should_include(
                 os.path.relpath(os.path.join(root, d), local_path).replace(os.sep, "/")
@@ -148,6 +201,23 @@ class SFTPSyncer:
             
             for filename in filenames:
                 file_path = os.path.join(root, filename)
+                
+                # Skip broken symlinks
+                if not os.path.exists(file_path):
+                    logger.warning(f"Broken symlink or inaccessible file, skipping: {file_path}")
+                    continue
+                
+                # Check if symlink points outside local_dir (security check)
+                if self.config.follow_symlinks and os.path.islink(file_path):
+                    try:
+                        real_path = os.path.realpath(file_path)
+                        if not real_path.startswith(os.path.realpath(local_path)):
+                            logger.warning(f"Symlink points outside local directory, skipping: {file_path}")
+                            continue
+                    except OSError as e:
+                        logger.warning(f"Cannot resolve symlink {file_path}: {e}")
+                        continue
+                
                 rel_path = os.path.relpath(file_path, local_path)
                 files.append(rel_path.replace(os.sep, "/"))
         

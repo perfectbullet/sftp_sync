@@ -38,6 +38,9 @@ class Config:
         self.delete_remote = config_dict.get("delete_remote", False)
         self.preserve_permissions = config_dict.get("preserve_permissions", True)
         
+        # Security settings
+        self.auto_add_host_key = config_dict.get("auto_add_host_key", False)
+        
         # Behavior settings
         self.dry_run = config_dict.get("dry_run", False)
         self.verbose = config_dict.get("verbose", False)
@@ -83,6 +86,7 @@ class Config:
             "exclude_patterns": args.exclude if args.exclude else [],
             "delete_remote": args.delete,
             "preserve_permissions": args.preserve_permissions,
+            "auto_add_host_key": args.auto_add_host_key,
             "dry_run": args.dry_run,
             "verbose": args.verbose,
             "follow_symlinks": args.follow_symlinks,
@@ -135,6 +139,7 @@ class Config:
             "exclude_patterns": self.exclude_patterns,
             "delete_remote": self.delete_remote,
             "preserve_permissions": self.preserve_permissions,
+            "auto_add_host_key": self.auto_add_host_key,
             "dry_run": self.dry_run,
             "verbose": self.verbose,
             "follow_symlinks": self.follow_symlinks,

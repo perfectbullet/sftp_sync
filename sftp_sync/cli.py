@@ -109,6 +109,13 @@ Examples:
         help="Exclude pattern (can be specified multiple times, e.g., '*.pyc', '__pycache__')"
     )
     
+    # Security settings
+    parser.add_argument(
+        "--auto-add-host-key",
+        action="store_true",
+        help="Automatically add unknown host keys (less secure, for testing/development only)"
+    )
+    
     # Behavior settings
     parser.add_argument(
         "--delete",
