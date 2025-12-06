@@ -10,7 +10,7 @@
 
 ### Features
 
-- **Flexible Authentication**: Support for both password and SSH key authentication
+- **Flexible Authentication**: Support for both password and SSH key authentication (RSA, DSA, ECDSA, Ed25519)
 - **Pattern-based Filtering**: Include/exclude files using glob patterns (like .gitignore)
 - **Incremental Sync**: Only uploads changed files (compares modification time and size)
 - **Dry Run Mode**: Preview changes before executing
@@ -21,6 +21,7 @@
 - **Configuration Files**: Use YAML config files for repeated syncs
 - **Comprehensive Logging**: Detailed operation logs with verbose mode
 - **Error Handling**: Robust error handling and recovery
+- **Security Features**: Host key verification, symlink protection, circular reference detection
 
 ### Installation
 
@@ -205,11 +206,33 @@ Exclude patterns take precedence over include patterns.
 
 ### Security Recommendations
 
-1. **Use SSH Keys**: Prefer SSH key authentication over passwords
-2. **Protect Config Files**: Don't commit config files with passwords to git
-3. **Use Environment Variables**: Store sensitive data in environment variables
-4. **Restrict Permissions**: Set appropriate file permissions (chmod 600) for key files
-5. **Test with Dry Run**: Always test with `--dry-run` first
+1. **Use SSH Keys**: Prefer SSH key authentication over passwords for better security
+2. **Host Key Verification**: 
+   - By default, host key verification uses `WarningPolicy` (secure mode)
+   - Add trusted hosts to `~/.ssh/known_hosts` before first connection
+   - Only use `--auto-add-host-key` or `auto_add_host_key: true` for testing/development
+   - For production, manually verify and add host keys using: `ssh-keyscan -H <host> >> ~/.ssh/known_hosts`
+3. **Protect Config Files**: 
+   - Don't commit config files with passwords to version control
+   - Add `config.yaml` to `.gitignore`
+   - Use file permissions: `chmod 600 config.yaml`
+4. **Use Environment Variables**: Store sensitive data in environment variables instead of config files
+5. **Restrict Key Permissions**: Set appropriate file permissions for SSH keys: `chmod 600 ~/.ssh/id_rsa`
+6. **Symlink Safety**: 
+   - Avoid using `--follow-symlinks` unless necessary
+   - Tool automatically detects circular symlinks and prevents infinite loops
+   - Symlinks pointing outside local directory are skipped for security
+7. **Test with Dry Run**: Always test with `--dry-run` first to preview changes
+8. **Review Exclude Patterns**: Ensure sensitive files (.env, credentials, keys) are excluded
+9. **Backup Important Data**: Use `--backup` flag when overwriting critical files
+
+### Security Features
+
+- **Host Key Verification**: Loads system and user known_hosts files for verification
+- **Symlink Protection**: Detects circular references and prevents directory traversal attacks
+- **Credential Protection**: Passwords are masked in logs and output
+- **SSH Key Support**: Supports all modern key types (RSA, DSA, ECDSA, Ed25519)
+- **Path Validation**: Validates that symlinks don't escape the local directory boundary
 
 ### Troubleshooting
 
@@ -217,11 +240,15 @@ Exclude patterns take precedence over include patterns.
 - Check host, username, and credentials
 - Verify firewall and network settings
 - Ensure SSH service is running on remote host
+- If you get "Host key verification failed":
+  - Add the host to known_hosts: `ssh-keyscan -H <host> >> ~/.ssh/known_hosts`
+  - Or use `--auto-add-host-key` flag for testing (not recommended for production)
 
 **Permission Denied**
-- Check SSH key permissions (should be 600)
+- Check SSH key permissions (should be 600): `chmod 600 ~/.ssh/id_rsa`
 - Verify username has access to remote directory
 - Check remote directory permissions
+- Ensure SSH key is added to remote server's authorized_keys
 
 **Files Not Syncing**
 - Check exclude patterns
@@ -234,7 +261,7 @@ Exclude patterns take precedence over include patterns.
 
 ### 功能特性
 
-- **灵活的认证方式**: 支持密码和SSH密钥认证
+- **灵活的认证方式**: 支持密码和SSH密钥认证（RSA、DSA、ECDSA、Ed25519）
 - **基于模式的过滤**: 使用glob模式包含/排除文件（类似.gitignore）
 - **增量同步**: 仅上传更改的文件（比较修改时间和大小）
 - **预演模式**: 执行前预览更改
@@ -245,6 +272,7 @@ Exclude patterns take precedence over include patterns.
 - **配置文件**: 使用YAML配置文件进行重复同步
 - **详细日志**: 带详细模式的详细操作日志
 - **错误处理**: 强大的错误处理和恢复机制
+- **安全特性**: 主机密钥验证、符号链接保护、循环引用检测
 
 ### 安装
 
@@ -429,11 +457,33 @@ syncer.sync()
 
 ### 安全建议
 
-1. **使用SSH密钥**: 优先使用SSH密钥认证而不是密码
-2. **保护配置文件**: 不要将包含密码的配置文件提交到git
-3. **使用环境变量**: 将敏感数据存储在环境变量中
-4. **限制权限**: 为密钥文件设置适当的文件权限（chmod 600）
-5. **使用预演测试**: 始终先使用 `--dry-run` 测试
+1. **使用SSH密钥**: 优先使用SSH密钥认证而不是密码，更加安全
+2. **主机密钥验证**: 
+   - 默认情况下，主机密钥验证使用 `WarningPolicy`（安全模式）
+   - 在首次连接前将受信任的主机添加到 `~/.ssh/known_hosts`
+   - 仅在测试/开发环境使用 `--auto-add-host-key` 或 `auto_add_host_key: true`
+   - 对于生产环境，手动验证并添加主机密钥：`ssh-keyscan -H <主机> >> ~/.ssh/known_hosts`
+3. **保护配置文件**: 
+   - 不要将包含密码的配置文件提交到版本控制系统
+   - 将 `config.yaml` 添加到 `.gitignore`
+   - 设置文件权限：`chmod 600 config.yaml`
+4. **使用环境变量**: 将敏感数据存储在环境变量中而不是配置文件
+5. **限制密钥权限**: 为SSH密钥设置适当的文件权限：`chmod 600 ~/.ssh/id_rsa`
+6. **符号链接安全**: 
+   - 除非必要，避免使用 `--follow-symlinks`
+   - 工具会自动检测循环符号链接并防止无限循环
+   - 指向本地目录外的符号链接会被跳过以确保安全
+7. **使用预演测试**: 始终先使用 `--dry-run` 预览更改
+8. **检查排除模式**: 确保敏感文件（.env、凭据、密钥）被排除
+9. **备份重要数据**: 覆盖关键文件时使用 `--backup` 标志
+
+### 安全特性
+
+- **主机密钥验证**: 加载系统和用户的 known_hosts 文件进行验证
+- **符号链接保护**: 检测循环引用并防止目录遍历攻击
+- **凭据保护**: 密码在日志和输出中被屏蔽
+- **SSH密钥支持**: 支持所有现代密钥类型（RSA、DSA、ECDSA、Ed25519）
+- **路径验证**: 验证符号链接不会逃离本地目录边界
 
 ### 故障排除
 
@@ -441,11 +491,15 @@ syncer.sync()
 - 检查主机、用户名和凭据
 - 验证防火墙和网络设置
 - 确保远程主机上的SSH服务正在运行
+- 如果遇到"主机密钥验证失败"错误：
+  - 添加主机到 known_hosts：`ssh-keyscan -H <主机> >> ~/.ssh/known_hosts`
+  - 或在测试时使用 `--auto-add-host-key` 标志（不建议在生产环境使用）
 
 **权限被拒绝**
-- 检查SSH密钥权限（应为600）
+- 检查SSH密钥权限（应为600）：`chmod 600 ~/.ssh/id_rsa`
 - 验证用户名有访问远程目录的权限
 - 检查远程目录权限
+- 确保SSH密钥已添加到远程服务器的 authorized_keys
 
 **文件未同步**
 - 检查排除模式
