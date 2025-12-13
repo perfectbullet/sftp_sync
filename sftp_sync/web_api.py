@@ -6,6 +6,7 @@ Provides FastAPI endpoints for web management interface
 import os
 import logging
 import json
+import paramiko
 from typing import List, Dict, Optional
 from datetime import datetime
 from pathlib import Path
@@ -87,7 +88,7 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact origins
+    allow_origins=["*"],  # TODO: In production, specify exact origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -279,12 +280,24 @@ async def test_connection(
 ):
     """
     Test SFTP connection
+    Note: Requires host key to be in known_hosts for security.
+    Add host key with: ssh-keyscan -H <host> >> ~/.ssh/known_hosts
     """
     try:
-        import paramiko
-        
         ssh_client = paramiko.SSHClient()
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        # Load system host keys for verification
+        try:
+            ssh_client.load_system_host_keys()
+            known_hosts_path = os.path.expanduser("~/.ssh/known_hosts")
+            if os.path.exists(known_hosts_path):
+                ssh_client.load_host_keys(known_hosts_path)
+        except Exception:
+            pass
+        
+        # Use RejectPolicy for security - requires host key to be known
+        # Users must add host keys manually using ssh-keyscan
+        ssh_client.set_missing_host_key_policy(paramiko.RejectPolicy())
         
         # Connect
         if private_key:
