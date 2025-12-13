@@ -94,9 +94,9 @@ app.add_middleware(
 )
 
 
-@app.get("/")
+@app.get("/api")
 async def root():
-    """Root endpoint"""
+    """API root endpoint"""
     return {
         "name": "SFTP Sync Web API",
         "version": "1.0.0",
@@ -334,8 +334,8 @@ if os.path.exists(static_dir):
         Serve the Vue.js SPA
         Serves index.html for all non-API routes to support Vue Router
         """
-        # Don't intercept API routes
-        if full_path.startswith("api/"):
+        # Don't intercept API routes, docs, or openapi.json
+        if full_path.startswith("api") or full_path in ["docs", "redoc", "openapi.json"]:
             raise HTTPException(status_code=404, detail="Not found")
         
         # Try to serve the requested file
