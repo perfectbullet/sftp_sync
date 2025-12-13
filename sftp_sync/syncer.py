@@ -7,7 +7,7 @@ import stat
 import logging
 import paramiko
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List 
 from tqdm import tqdm
 
 from .config import Config
@@ -88,28 +88,31 @@ class SFTPSyncer:
                 # Use SSH key authentication (supports RSA, DSA, ECDSA, Ed25519)
                 logger.info(f"Using SSH key: {self.config.private_key}")
                 from paramiko import RSAKey, Ed25519Key, ECDSAKey
+
                 # 在第 91-99 行替换为：
                 try:
                     # Try to load the key automatically (detects key type)
                     key_classes = [Ed25519Key, RSAKey, ECDSAKey]
                     pkey = None
-                    
+
                     for key_class in key_classes:
                         try:
                             pkey = key_class.from_private_key_file(
-                                self.config. private_key,
+                                self.config.private_key,
                                 password=self.config.private_key_password,
                             )
                             break
                         except Exception:
                             continue
-                    
+
                     if pkey is None:
-                        raise ValueError(f"Unable to load private key:  {self.config.private_key}")
-                    
+                        raise ValueError(
+                            f"Unable to load private key:  {self.config.private_key}"
+                        )
+
                     connect_kwargs["pkey"] = pkey
                 except Exception as e:
-                    logger. error(f"Failed to load private key: {e}")
+                    logger.error(f"Failed to load private key: {e}")
                     raise
             else:
                 # Use password authentication
