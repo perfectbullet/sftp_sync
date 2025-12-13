@@ -207,3 +207,4 @@ marimo/_lsp/
 __marimo__/
 examples/config.yaml
 config-copy.yaml
+sftp_sync_config-copy.yaml
