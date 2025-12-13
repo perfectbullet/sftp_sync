@@ -22,6 +22,7 @@
 - **Comprehensive Logging**: Detailed operation logs with verbose mode
 - **Error Handling**: Robust error handling and recovery
 - **Security Features**: Host key verification, symlink protection, circular reference detection
+- **Web Management Interface**: Modern Vue.js web UI with FastAPI backend for easy configuration and monitoring
 
 ### Installation
 
@@ -61,6 +62,28 @@ sftp-sync --host example.com --username myuser \
 
 ```bash
 sftp-sync --config config.yaml
+```
+
+#### Using Web Interface
+
+Start the web server:
+
+```bash
+sftp-sync-web
+```
+
+Then open your browser and visit `http://localhost:8000` to access the web management interface.
+
+The web interface provides:
+- **Visual Configuration**: Easy-to-use forms for setting up sync configurations
+- **Real-time Monitoring**: Track sync task status and progress
+- **Configuration Management**: Save, load, and manage multiple sync configurations
+- **Connection Testing**: Test SFTP connections before running sync
+
+You can customize the server host and port:
+
+```bash
+sftp-sync-web --host 0.0.0.0 --port 8080
 ```
 
 ### Configuration File
@@ -273,6 +296,7 @@ Exclude patterns take precedence over include patterns.
 - **详细日志**: 带详细模式的详细操作日志
 - **错误处理**: 强大的错误处理和恢复机制
 - **安全特性**: 主机密钥验证、符号链接保护、循环引用检测
+- **Web管理界面**: 基于Vue.js和FastAPI的现代化Web管理界面，方便配置和监控
 
 ### 安装
 
@@ -312,6 +336,28 @@ sftp-sync --host example.com --username myuser \
 
 ```bash
 sftp-sync --config config.yaml
+```
+
+#### 使用Web界面
+
+启动Web服务器：
+
+```bash
+sftp-sync-web
+```
+
+然后在浏览器中打开 `http://localhost:8000` 访问Web管理界面。
+
+Web界面提供以下功能：
+- **可视化配置**: 通过易用的表单设置同步配置
+- **实时监控**: 跟踪同步任务状态和进度
+- **配置管理**: 保存、加载和管理多个同步配置
+- **连接测试**: 在运行同步前测试SFTP连接
+
+你可以自定义服务器主机和端口：
+
+```bash
+sftp-sync-web --host 0.0.0.0 --port 8080
 ```
 
 ### 配置文件
