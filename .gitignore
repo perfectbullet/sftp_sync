@@ -208,3 +208,9 @@ __marimo__/
 examples/config.yaml
 config-copy.yaml
 sftp_sync_config-copy.yaml
+
+# Node.js / Web UI
+web-ui/node_modules/
+web-ui/dist/
+web-ui/.env.local
+web-ui/.env.production
