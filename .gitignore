@@ -211,6 +211,6 @@ sftp_sync_config-copy.yaml
 
 # Node.js / Web UI
 web-ui/node_modules/
-web-ui/dist/
 web-ui/.env.local
 web-ui/.env.production
+# Note: web-ui/dist/ is included in version control to serve the built Vue app
