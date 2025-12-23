@@ -25,6 +25,7 @@ setup(
     entry_points={
         "console_scripts": [
             "sftp-sync=sftp_sync.cli:main",
+            "sftp-sync-web=sftp_sync.web_server:main",
         ],
     },
 )
